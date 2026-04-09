@@ -2389,7 +2389,7 @@ class _AboutState extends State<_About> {
                         .marginSymmetric(vertical: 4.0)),
               InkWell(
                   onTap: () {
-                    launchUrlString('https://rustdesk.com/privacy.html');
+                    launchUrlString('https://shopos.kz/privacy');
                   },
                   child: Text(
                     translate('Privacy Statement'),
@@ -2397,7 +2397,7 @@ class _AboutState extends State<_About> {
                   ).marginSymmetric(vertical: 4.0)),
               InkWell(
                   onTap: () {
-                    launchUrlString('https://rustdesk.com');
+                    launchUrlString('https://shopos.kz');
                   },
                   child: Text(
                     translate('Website'),
@@ -2415,7 +2415,7 @@ class _AboutState extends State<_About> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Copyright © ${DateTime.now().toString().substring(0, 4)} Purslane Ltd.\n$license',
+                            'Copyright © ${DateTime.now().toString().substring(0, 4)} ShopOS.\nBased on RustDesk (AGPL-3.0).',
                             style: const TextStyle(color: Colors.white),
                           ),
                           Text(

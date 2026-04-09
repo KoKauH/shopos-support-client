@@ -1,3 +1,0 @@
-# Build workflow will be added in the next phase.
-# Original RustDesk workflows are preserved in .github/workflows.upstream/
-# for reference but disabled to avoid running on every push.

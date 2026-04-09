@@ -68,8 +68,10 @@ jobs:
 
       - name: Run flutter-rust-bridge
         run: |
-          ~/.cargo/bin/flutter_rust_bridge_codegen --rust-input ./src/flutter_ffi.rs --dart-output ./flutter/lib/generated_bridge.dart --c-output ./flutter/macos/Runner/bridge_generated.h
-          cp ./flutter/macos/Runner/bridge_generated.h ./flutter/ios/Runner/bridge_generated.h
+          # We removed flutter/ios and flutter/macos for the Windows-only build,
+          # so write the C header to the workspace root where Windows build does
+          # not need it but the codegen still expects a writable target.
+          ~/.cargo/bin/flutter_rust_bridge_codegen --rust-input ./src/flutter_ffi.rs --dart-output ./flutter/lib/generated_bridge.dart --c-output ./bridge_generated.h
 
       - name: Upload bridge artifact
         uses: actions/upload-artifact@v4
@@ -80,8 +82,6 @@ jobs:
             ./src/bridge_generated.io.rs
             ./flutter/lib/generated_bridge.dart
             ./flutter/lib/generated_bridge.freezed.dart
-            ./flutter/macos/Runner/bridge_generated.h
-            ./flutter/ios/Runner/bridge_generated.h
 
   build-windows-x64:
     needs: generate-bridge
@@ -195,13 +195,43 @@ jobs:
       - name: Build self-extracting installer
         shell: bash
         run: |
+          set -euxo pipefail
           sed -i "/dpiAware/d" res/manifest.xml
+
+          # generate.py writes data.bin + app_metadata.toml inside libs/portable
+          # and then calls `cargo build --release` via os.system, which silently
+          # swallows non-zero exit codes. Drive the build ourselves so any cargo
+          # error fails the job loudly.
           pushd ./libs/portable
           pip3 install -r requirements.txt
           python3 ./generate.py -f ../../shopos-support/ -o . -e ../../shopos-support/rustdesk.exe
           popd
+
+          # Build the portable packer explicitly. It is a workspace member, so
+          # the binary lands in the workspace target/release/ directory.
+          cargo build --release -p rustdesk-portable-packer
+
+          echo "--- target/release contents ---"
+          ls -la ./target/release/ | head -50 || true
+
+          # Find the binary regardless of whether it landed in workspace target
+          # or libs/portable/target (different cargo versions behave differently).
+          packer=""
+          for candidate in ./target/release/rustdesk-portable-packer.exe ./libs/portable/target/release/rustdesk-portable-packer.exe; do
+            if [ -f "$candidate" ]; then
+              packer="$candidate"
+              break
+            fi
+          done
+
+          if [ -z "$packer" ]; then
+            echo "ERROR: rustdesk-portable-packer.exe not found after cargo build"
+            find . -name "rustdesk-portable-packer*" 2>/dev/null || true
+            exit 1
+          fi
+
           mkdir -p ./output
-          mv ./target/release/rustdesk-portable-packer.exe ./output/${{ env.PRODUCT_NAME }}-${{ env.VERSION }}-x64.exe
+          cp "$packer" ./output/${{ env.PRODUCT_NAME }}-${{ env.VERSION }}-x64.exe
           ls -la ./output/
 
       - name: Upload installer artifact

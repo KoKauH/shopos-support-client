@@ -2389,7 +2389,7 @@ class _AboutState extends State<_About> {
                         .marginSymmetric(vertical: 4.0)),
               InkWell(
                   onTap: () {
-                    launchUrlString('https://shopos.kz/privacy');
+                    launchUrlString('https://help.shopos.kz/privacy');
                   },
                   child: Text(
                     translate('Privacy Statement'),

@@ -3,6 +3,7 @@ name: Build ShopOS Support (Windows x64)
 on:
   push:
     branches: [main]
+    tags: ["v*"]
     paths-ignore:
       - "README.md"
       - "LICENSE"
@@ -14,6 +15,9 @@ on:
         description: "Create a GitHub Release"
         type: boolean
         default: false
+
+permissions:
+  contents: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -242,15 +246,19 @@ jobs:
           retention-days: 30
 
       - name: Create Release
-        if: github.event_name == 'workflow_dispatch' && inputs.release == true
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.release == true)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ env.VERSION }}-${{ github.run_number }}
-          name: ShopOS Support v${{ env.VERSION }} (build ${{ github.run_number }})
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('v{0}-{1}', env.VERSION, github.run_number) }}
+          name: ShopOS Support ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('v{0} (build {1})', env.VERSION, github.run_number) }}
           body: |
-            Brand-new branded ShopOS Support build for Windows x64.
+            Брендированный клиент ShopOS Support для Windows x64.
 
-            Default server: help.shopos.kz
+            **Сервер по умолчанию:** help.shopos.kz
+            **Скачать последнюю версию:** https://help.shopos.kz
+
+            Этот билд автоматически собран из исходников в этом репозитории.
+            Лицензия: AGPL-3.0.
           files: ./output/${{ env.PRODUCT_NAME }}-${{ env.VERSION }}-x64.exe
           draft: false
           prerelease: false
